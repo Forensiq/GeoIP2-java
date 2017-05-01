@@ -207,6 +207,42 @@
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.1</version>
             </plugin>
+	    <!-- N.B. using shade-plugin to relocate guava into com.placeiq.guava due to conflicts with hbase's version of guava -->
+            <!-- Note that this must come before antrun-plugin which removes original jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <relocations>
+                      <!-- N.B. spark runtime depends on an older version of jackson, namely 2.6.5 which is incompatible with 2.8.x
+                           As a work-around, we relocate all maxmind's dependencies and use the shaded jar
+		      -->
+                        <relocation>
+                            <pattern>com.fasterxml.jackson</pattern>
+                            <shadedPattern>com.fasterxml.jackson.repackaged</shadedPattern>
+                        </relocation>
+                    </relocations>
+		    <artifactSet>
+                        <includes>
+                          <include>com.fasterxml.jackson.core:jackson-core</include>
+                          <include>com.fasterxml.jackson.core:jackson-databind</include>
+                          <include>com.fasterxml.jackson.core:jackson-annotations</include>
+			  <include>com.maxmind.geoip2:geoip2</include>
+                          <!-- maxmind-db has yet another dependency on jackson 2.7.x -->
+                          <include>com.maxmind.db:maxmind-db</include>
+                        </includes>
+                    </artifactSet>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
     <parent>
